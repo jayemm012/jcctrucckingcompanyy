@@ -116,6 +116,8 @@ def login():
     if request.method == "POST":
         username = request.form["username"].strip()
         password = request.form["password"].strip()
+        conn = get_db_connection()
+        if conn is None:
             flash("Database connection failed!", "danger")
             return redirect(url_for("home"))
 
