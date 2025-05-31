@@ -1,9 +1,5 @@
 flask
-mysql-connector-python
+psycopg2-binary
 requests
 werkzeug
 gunicorn
-<<<<<<< HEAD
-psycopg2-binary
-=======
->>>>>>> 12cdbe9245f9fd3384dae7fab3b550d8d57de456
