@@ -418,7 +418,7 @@ def userManagement():
         flash("Access denied.", "danger")
         return redirect(url_for("home"))
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
     cursor.execute("SELECT * FROM users")  # or include WHERE/ORDER BY as needed
     users = cursor.fetchall()
     cursor.close()
@@ -434,7 +434,7 @@ def customer():
     if conn is None:
         flash("Database connection failed!", "danger")
         return redirect(url_for("admindashboard"))
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
     try:
         cursor.execute("SELECT * FROM users ORDER BY id DESC")
         users = cursor.fetchall()
@@ -453,7 +453,7 @@ def show_client():
         flash("Database connection failed!", "danger")
         return redirect(url_for("admindashboard"))
 
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
     try:
         cursor.execute("SELECT * FROM clients ORDER BY submitted_at DESC")
         clients = cursor.fetchall()
@@ -558,7 +558,7 @@ def payment_failure():
 @app.route('/track_job/<int:job_id>')
 def track_job(job_id):
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
     cursor.execute('SELECT * FROM service_requests WHERE id = %s', (job_id,))
     job = cursor.fetchone()
     cursor.close()
@@ -587,7 +587,7 @@ def staff_driver():
         flash("Access denied.", "danger")
         return redirect(url_for("home"))
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
     if request.method == "POST":
         staff_id = request.form.get("staff_id")
         new_salary = request.form.get("salary")
@@ -608,7 +608,7 @@ def admin_services():
         flash("Access denied.", "danger")
         return redirect(url_for("home"))
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
     cursor.execute("SELECT * FROM service_requests ORDER BY id DESC")
     service_requests = cursor.fetchall()
     cursor.close()
@@ -637,7 +637,7 @@ def update_service_status(service_id):
 @app.route('/edit_user/<int:user_id>', methods=['POST', 'GET'])
 def edit_user(user_id):
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
     if request.method == 'POST':
         full_name = request.form.get('full_name', '').strip()
         email = request.form.get('email', '').strip()
@@ -695,7 +695,7 @@ def driver_dashboard():
 
     driver_username = session["username"]
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     # Fetch trips for this driver
     cursor.execute(
@@ -757,7 +757,7 @@ def assign_trip():
     driver_username = request.form['driver_username']
 
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     # Fetch the service request details
     cursor.execute("SELECT * FROM service_requests WHERE id = %s", (service_id,))
@@ -800,7 +800,7 @@ def assign_trip():
 @app.route('/assigntrips')
 def assign_trips():
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
     cursor.execute("SELECT username FROM driver")
     drivers = cursor.fetchall()
     cursor.close()
@@ -810,7 +810,8 @@ def assign_trips():
 @app.route('/driver_salary')
 def driver_salary():
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    
     cursor.execute("SELECT * FROM driver")
     drivers = cursor.fetchall()
     cursor.execute("SELECT * FROM trips")
