@@ -15,7 +15,8 @@ DB_CONFIG = {
     "user": os.environ.get("DB_USER"),
     "password": os.environ.get("DB_PASSWORD"),
     "dbname": os.environ.get("DB_NAME"),
-    "port": os.environ.get("DB_PORT", 5432)
+    "port": os.environ.get("DB_PORT", 5432),
+    "sslmode": "require"  # Ensure SSL for Render PostgreSQL
 }
 
 def get_db_connection():
@@ -115,13 +116,6 @@ def login():
     if request.method == "POST":
         username = request.form["username"].strip()
         password = request.form["password"].strip()
-
-        if not username or not password:
-            flash("Please fill in both fields.", "danger")
-            return redirect(url_for("home"))
-
-        conn = get_db_connection()
-        if conn is None:
             flash("Database connection failed!", "danger")
             return redirect(url_for("home"))
 
