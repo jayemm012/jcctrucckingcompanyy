@@ -1,28 +1,48 @@
 from flask import Flask, render_template, request, redirect, session, url_for, flash, send_file
+<<<<<<< HEAD
 import psycopg2
+=======
+import mysql.connector
+>>>>>>> 12cdbe9245f9fd3384dae7fab3b550d8d57de456
 import os
 import requests
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import date, datetime
+<<<<<<< HEAD
 import psycopg2.extras
+=======
+>>>>>>> 12cdbe9245f9fd3384dae7fab3b550d8d57de456
 
 app = Flask(__name__)
 app.secret_key = "your_secret_key"
 
 # Database Configuration
 DB_CONFIG = {
+<<<<<<< HEAD
     "host": os.environ.get("DB_HOST"),
     "user": os.environ.get("DB_USER"),
     "password": os.environ.get("DB_PASSWORD"),
     "dbname": os.environ.get("DB_NAME"),
     "port": os.environ.get("DB_PORT", 5432)
+=======
+    "host": os.environ.get("DB_HOST", "localhost"),
+    "user": os.environ.get("DB_USER", "root"),
+    "password": os.environ.get("DB_PASSWORD", "root"),
+    "database": os.environ.get("DB_NAME", "jctrucking_company")
+>>>>>>> 12cdbe9245f9fd3384dae7fab3b550d8d57de456
 }
 
 def get_db_connection():
     try:
+<<<<<<< HEAD
         conn = psycopg2.connect(**DB_CONFIG)
         return conn
     except Exception as e:
+=======
+        conn = mysql.connector.connect(**DB_CONFIG)
+        return conn
+    except mysql.connector.Error as e:
+>>>>>>> 12cdbe9245f9fd3384dae7fab3b550d8d57de456
         print(f"Database connection failed: {e}")
         return None
 
@@ -125,7 +145,11 @@ def login():
             flash("Database connection failed!", "danger")
             return redirect(url_for("home"))
 
+<<<<<<< HEAD
         cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+=======
+        cursor = conn.cursor(dictionary=True)
+>>>>>>> 12cdbe9245f9fd3384dae7fab3b550d8d57de456
         try:
             # Admin check
             cursor.execute("SELECT * FROM admin WHERE username = %s", (username,))
@@ -146,6 +170,10 @@ def login():
                 session["role"] = "driver"
                 flash("Driver login successful!", "success")
                 return redirect(url_for("driver_dashboard"))
+<<<<<<< HEAD
+=======
+
+>>>>>>> 12cdbe9245f9fd3384dae7fab3b550d8d57de456
             # User check
             cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
             user = cursor.fetchone()
@@ -175,7 +203,11 @@ def dashboard():
     if conn is None:
         flash("Database connection failed!", "danger")
         return redirect(url_for("home"))
+<<<<<<< HEAD
     cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+=======
+    cursor = conn.cursor(dictionary=True)
+>>>>>>> 12cdbe9245f9fd3384dae7fab3b550d8d57de456
     try:
         cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
         user = cursor.fetchone()
@@ -217,7 +249,11 @@ def dashboard():
 @app.route('/admindashboard')
 def admindashboard():
     conn = get_db_connection()
+<<<<<<< HEAD
     cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+=======
+    cursor = conn.cursor(dictionary=True)
+>>>>>>> 12cdbe9245f9fd3384dae7fab3b550d8d57de456
 
     cursor.execute("SELECT * FROM users")
     users = cursor.fetchall()
@@ -692,11 +728,64 @@ def recover_user(user_id):
 
 @app.route("/driverdashboard")
 def driver_dashboard():
+<<<<<<< HEAD
     return render_template("driverdashboard.html")
 
 @app.route("/dashboard-driver")
 def dashboard_driver():
     return render_template("driverdashboard.html")
+=======
+    if "username" not in session or session.get("role") != "driver":
+        flash("Access denied.", "danger")
+        return redirect(url_for("login"))
+
+    driver_username = session["username"]
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    # Fetch trips for this driver
+    cursor.execute(
+        "SELECT pickup, dropoff, date FROM trips WHERE driver_username = %s ORDER BY date DESC",
+        (driver_username,)
+    )
+    trips = cursor.fetchall()
+
+    # Fetch last reset date for this driver
+    cursor.execute(
+        "SELECT last_reset FROM driver_salary_reset WHERE driver_username = %s",
+        (driver_username,)
+    )
+    row = cursor.fetchone()
+    last_reset = row['last_reset'] if row else None
+
+    # Calculate salary: only trips after last reset
+    if last_reset:
+        trip_count = sum(1 for trip in trips if trip['date'] > last_reset)
+    else:
+        trip_count = len(trips)
+    salary = trip_count * 1500
+
+    # Fetch messages between driver and admin
+    cursor.execute("""
+        SELECT * FROM user_messages
+        WHERE (sender_username = %s AND recipient_username = 'admin')
+           OR (sender_username = 'admin' AND recipient_username = %s)
+        ORDER BY date ASC
+    """, (driver_username, driver_username))
+    messages = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+    return render_template("driverdashboard.html", trips=trips, salary=salary, messages=messages, driver_username=driver_username)
+
+@app.route("/dashboard-driver")
+def dashboard_driver():
+    if "username" not in session or session.get("role") != "driver":
+        flash("Access denied.", "danger")
+        return redirect(url_for("home"))
+    # Fetch driver-specific data here if needed
+    return render_template("driverdashboard.html", username=session["username"])
+>>>>>>> 12cdbe9245f9fd3384dae7fab3b550d8d57de456
 
 @app.route("/view_route_driver")
 def view_route_driver():
@@ -827,7 +916,11 @@ def admin_send_message():
 def usersdashboard():
     username = session['username']
     conn = get_db_connection()
+<<<<<<< HEAD
     cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+=======
+    cursor = conn.cursor(dictionary=True)
+>>>>>>> 12cdbe9245f9fd3384dae7fab3b550d8d57de456
 
     # Fetch user info
     cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
@@ -915,7 +1008,11 @@ def driver_send_message():
     return redirect(url_for('driver_dashboard', section='driver-messages-section'))
 
 if __name__ == "__main__":
+<<<<<<< HEAD
     app.run()
+=======
+    app.run(debug=True)
+>>>>>>> 12cdbe9245f9fd3384dae7fab3b550d8d57de456
 
 
 
