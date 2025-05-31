@@ -1,26 +1,28 @@
 from flask import Flask, render_template, request, redirect, session, url_for, flash, send_file
-import mysql.connector
+import psycopg2
 import os
 import requests
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import date, datetime
+import psycopg2.extras
 
 app = Flask(__name__)
 app.secret_key = "your_secret_key"
 
 # Database Configuration
 DB_CONFIG = {
-    "host": "localhost",
-    "user": "root",
-    "password": "root",
-    "database": "jctrucking_company"
+    "host": os.environ.get("DB_HOST"),
+    "user": os.environ.get("DB_USER"),
+    "password": os.environ.get("DB_PASSWORD"),
+    "dbname": os.environ.get("DB_NAME"),
+    "port": os.environ.get("DB_PORT", 5432)
 }
 
 def get_db_connection():
     try:
-        conn = mysql.connector.connect(**DB_CONFIG)
+        conn = psycopg2.connect(**DB_CONFIG)
         return conn
-    except mysql.connector.Error as e:
+    except Exception as e:
         print(f"Database connection failed: {e}")
         return None
 
@@ -123,7 +125,7 @@ def login():
             flash("Database connection failed!", "danger")
             return redirect(url_for("home"))
 
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         try:
             # Admin check
             cursor.execute("SELECT * FROM admin WHERE username = %s", (username,))
@@ -144,7 +146,6 @@ def login():
                 session["role"] = "driver"
                 flash("Driver login successful!", "success")
                 return redirect(url_for("driver_dashboard"))
-
             # User check
             cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
             user = cursor.fetchone()
@@ -174,7 +175,7 @@ def dashboard():
     if conn is None:
         flash("Database connection failed!", "danger")
         return redirect(url_for("home"))
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
     try:
         cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
         user = cursor.fetchone()
@@ -216,7 +217,7 @@ def dashboard():
 @app.route('/admindashboard')
 def admindashboard():
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     cursor.execute("SELECT * FROM users")
     users = cursor.fetchall()
@@ -691,56 +692,11 @@ def recover_user(user_id):
 
 @app.route("/driverdashboard")
 def driver_dashboard():
-    if "username" not in session or session.get("role") != "driver":
-        flash("Access denied.", "danger")
-        return redirect(url_for("login"))
-
-    driver_username = session["username"]
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-
-    # Fetch trips for this driver
-    cursor.execute(
-        "SELECT pickup, dropoff, date FROM trips WHERE driver_username = %s ORDER BY date DESC",
-        (driver_username,)
-    )
-    trips = cursor.fetchall()
-
-    # Fetch last reset date for this driver
-    cursor.execute(
-        "SELECT last_reset FROM driver_salary_reset WHERE driver_username = %s",
-        (driver_username,)
-    )
-    row = cursor.fetchone()
-    last_reset = row['last_reset'] if row else None
-
-    # Calculate salary: only trips after last reset
-    if last_reset:
-        trip_count = sum(1 for trip in trips if trip['date'] > last_reset)
-    else:
-        trip_count = len(trips)
-    salary = trip_count * 1500
-
-    # Fetch messages between driver and admin
-    cursor.execute("""
-        SELECT * FROM user_messages
-        WHERE (sender_username = %s AND recipient_username = 'admin')
-           OR (sender_username = 'admin' AND recipient_username = %s)
-        ORDER BY date ASC
-    """, (driver_username, driver_username))
-    messages = cursor.fetchall()
-
-    cursor.close()
-    conn.close()
-    return render_template("driverdashboard.html", trips=trips, salary=salary, messages=messages, driver_username=driver_username)
+    return render_template("driverdashboard.html")
 
 @app.route("/dashboard-driver")
 def dashboard_driver():
-    if "username" not in session or session.get("role") != "driver":
-        flash("Access denied.", "danger")
-        return redirect(url_for("home"))
-    # Fetch driver-specific data here if needed
-    return render_template("driverdashboard.html", username=session["username"])
+    return render_template("driverdashboard.html")
 
 @app.route("/view_route_driver")
 def view_route_driver():
@@ -871,7 +827,7 @@ def admin_send_message():
 def usersdashboard():
     username = session['username']
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     # Fetch user info
     cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
@@ -959,7 +915,7 @@ def driver_send_message():
     return redirect(url_for('driver_dashboard', section='driver-messages-section'))
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run()
 
 
 
