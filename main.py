@@ -9,6 +9,9 @@ from datetime import date, datetime
 app = Flask(__name__)
 app.secret_key = "your_secret_key"
 
+# Force the correct external hostname for Render PostgreSQL
+os.environ["DB_HOST"] = "dpg-d0tkkau3jp1c73en9kmg-a.oregon-postgres.render.com"
+
 # Database Configuration
 DB_CONFIG = {
     "host": os.environ.get("DB_HOST"),
